@@ -47,7 +47,7 @@ async def add_student(student: Students):
     }
 
 @app.put("/students/{student_id}") 
-async def update_student(student_id: Annotated[int,path(ge=1)],student: Students):
+async def update_student(student_id: Annotated[int,Path(ge=1)],student: Students):
     if student_id in students:  
         students[student_id]={"name":student.name,
                         "age":student.age,

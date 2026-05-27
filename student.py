@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Query
+from fastapi import FastAPI,Query, Path
 from pydantic import BaseModel
 from typing import Annotated
 app=FastAPI()
@@ -29,7 +29,7 @@ async def students_display(name: str| None=None):
 
 
 @app.get("/students/{student_id}")
-async def display_id(student_id: int):
+async def display_id(student_id: Annotated[int,Path(ge=1)]):
     if student_id in students:
         return {"student": students[student_id]}
     return {"error": "Student not found"}
@@ -47,7 +47,7 @@ async def add_student(student: Students):
     }
 
 @app.put("/students/{student_id}") 
-async def update_student(student_id: int,student: Students):
+async def update_student(student_id: Annotated[int,path(ge=1)],student: Students):
     if student_id in students:  
         students[student_id]={"name":student.name,
                         "age":student.age,
@@ -58,7 +58,7 @@ async def update_student(student_id: int,student: Students):
     return{"error":"Student not found"}        
 
 @app.delete("/students/{student_id}")
-async def delete_student(student_id: int):
+async def delete_student(student_id: Annotated[int,Path(ge=1)]):
     if student_id in students:
         del students[student_id]
         return{"message":"Deleted"}

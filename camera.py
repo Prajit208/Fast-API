@@ -1,10 +1,20 @@
 # A multi camera detection API  
-from fastapi import FastAPI,File, UploadFile,status,Path,HTTPException
+from fastapi import FastAPI,File, UploadFile,status,Path,HTTPException,BackgroundTasks
 from typing import Annotated
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
+import time
 app=FastAPI()
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class Camera(BaseModel):
     name: str
     location: str
@@ -13,10 +23,20 @@ class Detection(BaseModel):
     filename: str
     file_size: int
     detected_action: str
-    confidence: float
+    confidence: float 
+    status: str| None=None
 
 cameras={}
 detections={}
+
+def run_model_inference(detection_id: int,file_contents: bytes):
+    time.sleep(3)# Simulate ML model processing time
+    detections[detection_id].update({
+        "detected_action": "punch",
+        "confidence": 0.98,
+        "status": "completed"
+    })
+    
 
 @app.post("/cameras",status_code=status.HTTP_201_CREATED)
 async def add_camera(new_camera : Camera):
@@ -29,12 +49,24 @@ async def list_camera():
     return{"details":cameras}
     
 @app.post("/cameras/{camera_id}/detect",status_code=status.HTTP_201_CREATED) 
-async def detect(camera_id: Annotated[int,Path(ge=1)],file: UploadFile):
+async def detect(camera_id: Annotated[int,Path(ge=1)],file: UploadFile,background_tasks:BackgroundTasks):
+    
     if camera_id in cameras:
         contents=await file.read()
         new_id= max(detections.keys())+1 if detections else 1
-        detections[new_id]={"camera_id":camera_id,"filename":file.filename,"file_size":len(contents),"detected_action":"punch","confidence":0.98}
-        return {"detection": detections[new_id]}
+        
+        # Create a placeholder record
+        detections[new_id] = {
+            "camera_id": camera_id,
+            "filename": file.filename,
+            "file_size": len(contents),
+            "detected_action": "processing...",
+            "confidence": 0.0,
+            "status": "pending"
+            }
+        background_tasks.add_task(run_model_inference,new_id,contents)
+        return{"message":"Inference started","detection id":new_id,"status":"pending"}
+        
     else: raise HTTPException(status_code=404, detail="Camera ID not found")
 
 @app.get("/cameras/{camera_id}/detections",status_code=status.HTTP_200_OK)

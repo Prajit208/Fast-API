@@ -16,8 +16,8 @@ async def display_file(file: UploadFile):
     id=max(detections.keys())+1 if detections else 1
     detections[id]={"filename":file.filename,"filesize":len(contents),"detection":"A cat","confidence":0.96}
     return{"file_info":detections[id]}
+
 @app.get("/detections")
- 
 async def all_detection():
     return {"Detections":detections} 
 @app.get("/detections/{id}")
